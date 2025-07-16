@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drivers & Vehicles - NST Travels</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h2 class="mb-4">Driver & Vehicle Management</h2>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="card border-primary">
+          <div class="card-body text-center">
+            <h5 class="card-title">Total Drivers</h5>
+            <h3 id="driverCount">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-success">
+          <div class="card-body text-center">
+            <h5 class="card-title">Total Vehicles</h5>
+            <h3 id="vehicleCount">0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h4>Driver Management</h4>
+    <form id="driverForm" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="driverName" class="form-label">Driver Name</label>
+        <input type="text" class="form-control" id="driverName" required />
+      </div>
+      <div class="col-md-4">
+        <label for="driverNumber" class="form-label">Mobile Number</label>
+        <input type="tel" class="form-control" id="driverNumber" required />
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Add Driver</button>
+      </div>
+    </form>
+
+    <table class="table table-bordered table-striped mb-5">
+      <thead class="table-dark">
+        <tr>
+          <th>Driver Name</th>
+          <th>Mobile Number</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="driverTableBody"></tbody>
+    </table>
+
+    <h4>Vehicle Management</h4>
+    <form id="vehicleForm" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="vehicleModel" class="form-label">Vehicle Model</label>
+        <input type="text" class="form-control" id="vehicleModel" required />
+      </div>
+      <div class="col-md-4">
+        <label for="vehicleNumber" class="form-label">Vehicle Number</label>
+        <input type="text" class="form-control" id="vehicleNumber" required />
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100">Add Vehicle</button>
+      </div>
+    </form>
+
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>Vehicle Model</th>
+          <th>Vehicle Number</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="vehicleTableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz2rGDr0iREns6Rg6r1z5EHE3qhLDnEzs",
+      authDomain: "narayananselvitravels-26dcb.firebaseapp.com",
+      databaseURL: "https://narayananselvitravels-26dcb-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "narayananselvitravels-26dcb",
+      storageBucket: "narayananselvitravels-26dcb.appspot.com",
+      messagingSenderId: "395599682835",
+      appId: "1:395599682835:web:9d46e03ca14aa0738dcee6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Driver Logic
+    const driverForm = document.getElementById("driverForm");
+    const driverName = document.getElementById("driverName");
+    const driverNumber = document.getElementById("driverNumber");
+    const driverTableBody = document.getElementById("driverTableBody");
+    const driverCount = document.getElementById("driverCount");
+
+    driverForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = driverName.value.trim();
+      const number = driverNumber.value.trim();
+      if (!name || !number) return alert("Please enter both name and number.");
+      db.ref("drivers").push({ name, number });
+      driverForm.reset();
+    });
+
+    db.ref("drivers").on("value", (snapshot) => {
+      driverTableBody.innerHTML = "";
+      let count = 0;
+      snapshot.forEach((child) => {
+        count++;
+        const data = child.val();
+        const key = child.key;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.number}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-1" onclick="editDriver('${key}', '${data.name}', '${data.number}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteDriver('${key}')">Delete</button>
+          </td>
+        `;
+        driverTableBody.appendChild(row);
+      });
+      driverCount.textContent = count;
+    });
+
+    function deleteDriver(key) {
+      if (confirm("Delete this driver?")) db.ref("drivers/" + key).remove();
+    }
+
+    function editDriver(key, name, number) {
+      const newName = prompt("Edit Driver Name:", name);
+      const newNumber = prompt("Edit Driver Number:", number);
+      if (newName && newNumber) db.ref("drivers/" + key).set({ name: newName, number: newNumber });
+    }
+
+    // Vehicle Logic
+    const vehicleForm = document.getElementById("vehicleForm");
+    const vehicleModel = document.getElementById("vehicleModel");
+    const vehicleNumber = document.getElementById("vehicleNumber");
+    const vehicleTableBody = document.getElementById("vehicleTableBody");
+    const vehicleCount = document.getElementById("vehicleCount");
+
+    vehicleForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const model = vehicleModel.value.trim();
+      const number = vehicleNumber.value.trim();
+      if (!model || !number) return alert("Please enter both model and number.");
+      db.ref("vehicles").push({ model, number });
+      vehicleForm.reset();
+    });
+
+    db.ref("vehicles").on("value", (snapshot) => {
+      vehicleTableBody.innerHTML = "";
+      let count = 0;
+      snapshot.forEach((child) => {
+        count++;
+        const data = child.val();
+        const key = child.key;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.model}</td>
+          <td>${data.number}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-1" onclick="editVehicle('${key}', '${data.model}', '${data.number}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${key}')">Delete</button>
+          </td>
+        `;
+        vehicleTableBody.appendChild(row);
+      });
+      vehicleCount.textContent = count;
+    });
+
+    function deleteVehicle(key) {
+      if (confirm("Delete this vehicle?")) db.ref("vehicles/" + key).remove();
+    }
+
+    function editVehicle(key, model, number) {
+      const newModel = prompt("Edit Vehicle Model:", model);
+      const newNumber = prompt("Edit Vehicle Number:", number);
+      if (newModel && newNumber) db.ref("vehicles/" + key).set({ model: newModel, number: newNumber });
+    }
+  </script>
+</body>
+</html>
