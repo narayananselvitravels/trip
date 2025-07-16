@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NST Travels - Trip Summary</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      padding: 15px;
+      background: #f8f9fa;
+    }
+    table {
+      table-layout: auto;
+      word-wrap: break-word;
+    }
+    .modal-lg {
+      max-width: 95% !important;
+    }
+    @media (max-width: 767px) {
+      table {
+        font-size: 12px;
+      }
+      .btn {
+        font-size: 12px;
+        padding: 5px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2 class="mb-4">NST Travels - Trip Summary</h2>
+
+  <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <select id="driverFilter" class="form-select w-auto" aria-label="Filter by Driver">
+      <option value="">Filter by Driver</option>
+    </select>
+    <select id="vehicleFilter" class="form-select w-auto" aria-label="Filter by Vehicle">
+      <option value="">Filter by Vehicle</option>
+    </select>
+    <input type="date" id="startDate" class="form-control w-auto" aria-label="Start Date" />
+    <input type="date" id="endDate" class="form-control w-auto" aria-label="End Date" />
+    <button id="deleteSelected" class="btn btn-danger" title="Delete Selected">Delete Selected</button>
+    <button id="exportExcel" class="btn btn-success" title="Export to Excel"><i class="fa fa-file-excel"></i> Excel</button>
+    <button id="exportPDF" class="btn btn-danger" title="Export to PDF"><i class="fa fa-file-pdf"></i> PDF</button>
+  </div>
+
+  <table class="table table-bordered table-striped table-responsive align-middle" id="tripTable">
+    <thead class="table-dark text-center">
+      <tr>
+        <th><input type="checkbox" id="selectAll" aria-label="Select All Trips" /></th>
+        <th>Trip ID</th>
+        <th>Date</th>
+        <th>Duty</th>
+        <th>Reference</th>
+        <th>Pickup</th>
+        <th>Drop</th>
+        <th>Customer Name</th>
+        <th>Customer Number</th>
+        <th>Driver Name</th>
+        <th>Driver Number</th>
+        <th>Vehicle Model</th>
+        <th>Vehicle Number</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Duration (hrs)</th>
+        <th>Extra Hours</th>
+        <th>Start KM</th>
+        <th>End KM</th>
+        <th>Total KM</th>
+        <th>Extra KM</th>
+        <th>Parking (₹)</th>
+        <th>Toll (₹)</th>
+        <th>Total Amount (₹)</th>
+        <th>Payment Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tripTableBody" class="text-center"></tbody>
+  </table>
+
+  <!-- Edit Modal -->
+  <div
+    class="modal fade"
+    id="editModal"
+    tabindex="-1"
+    aria-labelledby="editModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <form id="editForm">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="editModalLabel">Edit Trip</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <!-- Trip Details -->
+              <div class="col-md-4">
+                <label for="editBookingId" class="form-label">Trip ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editBookingId"
+                  readonly
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label for="editDate" class="form-label">Date</label>
+                <input type="date" class="form-control" id="editDate" required />
+              </div>
+              <div class="col-md-4">
+                <label for="editDuty" class="form-label">Duty</label>
+                <input type="text" class="form-control" id="editDuty" />
+              </div>
+              <div class="col-md-4">
+                <label for="editReference" class="form-label">Reference</label>
+                <input type="text" class="form-control" id="editReference" />
+              </div>
+
+              <!-- Locations -->
+              <div class="col-md-6">
+                <label for="editPickupLocation" class="form-label">Pickup</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editPickupLocation"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="editDropLocation" class="form-label">Drop</label>
+                <input type="text" class="form-control" id="editDropLocation" required />
+              </div>
+
+              <!-- Customer Info -->
+              <div class="col-md-6">
+                <label for="editCustomerName" class="form-label">Customer Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editCustomerName"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="editCustomerNumber" class="form-label">Customer Number</label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="editCustomerNumber"
+                  pattern="[0-9]{10,15}"
+                  required
+                />
+              </div>
+
+              <!-- Driver Info -->
+              <div class="col-md-6">
+                <label for="editDriverName" class="form-label">Driver Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editDriverName"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="editDriverNumber" class="form-label">Driver Number</label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="editDriverNumber"
+                  pattern="[0-9]{10,15}"
+                  required
+                />
+              </div>
+
+              <!-- Vehicle Info -->
+              <div class="col-md-6">
+                <label for="editVehicleModel" class="form-label">Vehicle Model</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editVehicleModel"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="editVehicleNumber" class="form-label">Vehicle Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editVehicleNumber"
+                  required
+                />
+              </div>
+
+              <!-- Time Details -->
+              <div class="col-md-3">
+                <label for="editStartTime" class="form-label">Start Time</label>
+                <input type="time" class="form-control" id="editStartTime" required />
+              </div>
+              <div class="col-md-3">
+                <label for="editEndTime" class="form-label">End Time</label>
+                <input type="time" class="form-control" id="editEndTime" required />
+              </div>
+              <div class="col-md-3">
+                <label for="editDuration" class="form-label">Duration (hrs)</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="editDuration"
+                  step="0.01"
+                  readonly
+                />
+              </div>
+              <div class="col-md-3">
+                <label for="editExtraHours" class="form-label">Extra Hours</label>
+                <input type="number" class="form-control" id="editExtraHours" min="0" />
+              </div>
+
+              <!-- Distance Details -->
+              <div class="col-md-3">
+                <label for="editStartKm" class="form-label">Start KM</label>
+                <input type="number" class="form-control" id="editStartKm" min="0" required />
+              </div>
+              <div class="col-md-3">
+                <label for="editEndKm" class="form-label">End KM</label>
+                <input type="number" class="form-control" id="editEndKm" min="0" required />
+              </div>
+              <div class="col-md-3">
+                <label for="editTotalKm" class="form-label">Total KM</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="editTotalKm"
+                  step="0.1"
+                  readonly
+                />
+              </div>
+              <div class="col-md-3">
+                <label for="editExtraKm" class="form-label">Extra KM</label>
+                <input type="number" class="form-control" id="editExtraKm" min="0" />
+              </div>
+
+              <!-- Fare Details -->
+              <div class="col-md-4">
+                <label for="editParking" class="form-label">Parking (₹)</label>
+                <input type="number" class="form-control" id="editParking" min="0" />
+              </div>
+              <div class="col-md-4">
+                <label for="editToll" class="form-label">Toll (₹)</label>
+                <input type="number" class="form-control" id="editToll" min="0" />
+              </div>
+              <div class="col-md-4">
+                <label for="editTotalAmount" class="form-label">Total Amount (₹)</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="editTotalAmount"
+                  min="0"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="editPaymentStatus" class="form-label">Payment Status</label>
+                <select class="form-select" id="editPaymentStatus" required>
+                  <option value="Paid">Paid</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase & Dependencies -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- jsPDF and jsPDF AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    // Firebase config (replace with your config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz2rGDr0iREns6Rg6r1z5EHE3qhLDnEzs",
+      authDomain: "narayananselvitravels-26dcb.firebaseapp.com",
+      databaseURL:
+        "https://narayananselvitravels-26dcb-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "narayananselvitravels-26dcb",
+      storageBucket: "narayananselvitravels-26dcb.firebasestorage.app",
+      messagingSenderId: "395599682835",
+      appId: "1:395599682835:web:9d46e03ca14aa0738dcee6",
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Global variables
+    let allTrips = [];
+    let tripKeys = [];
+    let currentEditKey = null;
+
+    // Elements
+    const tripTableBody = document.getElementById("tripTableBody");
+    const driverFilter = document.getElementById("driverFilter");
+    const vehicleFilter = document.getElementById("vehicleFilter");
+    const startDateInput = document.getElementById("startDate");
+    const endDateInput = document.getElementById("endDate");
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const deleteSelectedBtn = document.getElementById("deleteSelected");
+    const exportExcelBtn = document.getElementById("exportExcel");
+    const exportPDFBtn = document.getElementById("exportPDF");
+    const editModalEl = document.getElementById("editModal");
+    const editModal = new bootstrap.Modal(editModalEl);
+    const editForm = document.getElementById("editForm");
+
+    // Fetch trips from Firebase and listen for changes
+    firebase
+      .database()
+      .ref("trips")
+      .on("value", (snapshot) => {
+        const tripsObj = snapshot.val() || {};
+        allTrips = Object.values(tripsObj);
+        tripKeys = Object.keys(tripsObj);
+        populateFilters();
+        renderTrips(driverFilter.value, vehicleFilter.value);
+      });
+
+    // Populate driver and vehicle filters
+    function populateFilters() {
+      const drivers = [...new Set(allTrips.map((t) => t.driverName).filter(Boolean))].sort();
+      const vehicles = [...new Set(allTrips.map((t) => t.vehicleModel).filter(Boolean))].sort();
+
+      fillSelect(driverFilter, drivers, "Filter by Driver");
+      fillSelect(vehicleFilter, vehicles, "Filter by Vehicle");
+    }
+
+    function fillSelect(selectElem, items, defaultText) {
+      const current = selectElem.value;
+      selectElem.innerHTML = `<option value="">${defaultText}</option>`;
+      items.forEach((item) => {
+        const opt = document.createElement("option");
+        opt.value = item;
+        opt.textContent = item;
+        selectElem.appendChild(opt);
+      });
+      selectElem.value = current || "";
+    }
+
+    // Render trips table with optional filtering
+    function renderTrips(driverFilterVal, vehicleFilterVal) {
+      const sDate = startDateInput.value ? new Date(startDateInput.value) : null;
+      const eDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+      tripTableBody.innerHTML = "";
+      let filteredTrips = allTrips.map((trip, i) => ({ ...trip, key: tripKeys[i] }));
+
+      if (driverFilterVal) {
+        filteredTrips = filteredTrips.filter((t) => t.driverName === driverFilterVal);
+      }
+      if (vehicleFilterVal) {
+        filteredTrips = filteredTrips.filter((t) => t.vehicleModel === vehicleFilterVal);
+      }
+      if (sDate) {
+        filteredTrips = filteredTrips.filter((t) => new Date(t.date) >= sDate);
+      }
+      if (eDate) {
+        filteredTrips = filteredTrips.filter((t) => new Date(t.date) <= eDate);
+      }
+
+      if (filteredTrips.length === 0) {
+        tripTableBody.innerHTML =
+          `<tr><td colspan="26" class="text-center">No trips found.</td></tr>`;
+        return;
+      }
+
+      filteredTrips.forEach((trip) => {
+        const row = document.createElement("tr");
+        row.classList.add("align-middle");
+        row.innerHTML = `
+          <td><input type="checkbox" class="trip-select" data-key="${trip.key}" aria-label="Select Trip ${trip.bookingId}" /></td>
+          <td>${trip.bookingId || ""}</td>
+          <td>${trip.date || ""}</td>
+          <td>${trip.duty || ""}</td>
+          <td>${trip.reference || ""}</td>
+          <td>${trip.pickupLocation || ""}</td>
+          <td>${trip.dropLocation || ""}</td>
+          <td>${trip.customerName || ""}</td>
+          <td>${trip.customerNumber || ""}</td>
+          <td>${trip.driverName || ""}</td>
+          <td>${trip.driverNumber || ""}</td>
+          <td>${trip.vehicleModel || ""}</td>
+          <td>${trip.vehicleNumber || ""}</td>
+          <td>${formatTime12h(trip.startTime)}</td>
+          <td>${formatTime12h(trip.endTime)}</td>
+          <td>${trip.duration || ""}</td>
+          <td>${trip.extraHours || ""}</td>
+          <td>${trip.startKm || ""}</td>
+          <td>${trip.endKm || ""}</td>
+          <td>${trip.totalKm || ""}</td>
+          <td>${trip.extraKm || ""}</td>
+          <td>${trip.parking || ""}</td>
+          <td>${trip.toll || ""}</td>
+          <td>${trip.totalAmount || ""}</td>
+          <td>${trip.paymentStatus || ""}</td>
+          <td>
+            <button class="btn btn-sm btn-primary me-1 edit-btn" data-key="${trip.key}" aria-label="Edit ${trip.bookingId}">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger me-1 delete-btn" data-key="${trip.key}" aria-label="Delete ${trip.bookingId}">
+              <i class="fa fa-trash"></i>
+            </button>
+            <button class="btn btn-sm btn-success whatsapp-btn" data-key="${trip.key}" aria-label="Share ${trip.bookingId} via WhatsApp">
+              <i class="fa fa-whatsapp"></i>
+            </button>
+          </td>
+        `;
+        tripTableBody.appendChild(row);
+      });
+
+      // Setup event listeners after rendering
+      setupActionButtons();
+    }
+
+    // Format 24h time to 12h with AM/PM
+    function formatTime12h(timeStr) {
+      if (!timeStr) return "";
+      const [hh, mm] = timeStr.split(":");
+      let hour = parseInt(hh, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      hour = hour % 12 || 12;
+      return `${hour}:${mm} ${ampm}`;
+    }
+
+    // Setup Edit, Delete, WhatsApp buttons event listeners
+    function setupActionButtons() {
+      document.querySelectorAll(".edit-btn").forEach((btn) => {
+        btn.onclick = () => {
+          currentEditKey = btn.getAttribute("data-key");
+          openEditModal(currentEditKey);
+        };
+      });
+
+      document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const key = btn.getAttribute("data-key");
+          if (
+            confirm(
+              `Are you sure you want to delete trip with ID ${getTripByKey(key).bookingId}?`
+            )
+          ) {
+            deleteTrip(key);
+          }
+        };
+      });
+
+      document.querySelectorAll(".whatsapp-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const key = btn.getAttribute("data-key");
+          shareTripWhatsApp(key);
+        };
+      });
+    }
+
+    // Get trip object by key
+    function getTripByKey(key) {
+      const index = tripKeys.indexOf(key);
+      return index > -1 ? allTrips[index] : null;
+    }
+
+    // Open edit modal and pre-fill values
+    function openEditModal(key) {
+      const trip = getTripByKey(key);
+      if (!trip) {
+        alert("Trip data not found.");
+        return;
+      }
+
+      // Fill form fields
+      document.getElementById("editBookingId").value = trip.bookingId || "";
+      document.getElementById("editDate").value = trip.date || "";
+      document.getElementById("editDuty").value = trip.duty || "";
+      document.getElementById("editReference").value = trip.reference || "";
+      document.getElementById("editPickupLocation").value = trip.pickupLocation || "";
+      document.getElementById("editDropLocation").value = trip.dropLocation || "";
+      document.getElementById("editCustomerName").value = trip.customerName || "";
+      document.getElementById("editCustomerNumber").value = trip.customerNumber || "";
+      document.getElementById("editDriverName").value = trip.driverName || "";
+      document.getElementById("editDriverNumber").value = trip.driverNumber || "";
+      document.getElementById("editVehicleModel").value = trip.vehicleModel || "";
+      document.getElementById("editVehicleNumber").value = trip.vehicleNumber || "";
+      document.getElementById("editStartTime").value = trip.startTime || "";
+      document.getElementById("editEndTime").value = trip.endTime || "";
+      document.getElementById("editDuration").value = trip.duration || "";
+      document.getElementById("editExtraHours").value = trip.extraHours || "";
+      document.getElementById("editStartKm").value = trip.startKm || "";
+      document.getElementById("editEndKm").value = trip.endKm || "";
+      document.getElementById("editTotalKm").value = trip.totalKm || "";
+      document.getElementById("editExtraKm").value = trip.extraKm || "";
+      document.getElementById("editParking").value = trip.parking || "";
+      document.getElementById("editToll").value = trip.toll || "";
+      document.getElementById("editTotalAmount").value = trip.totalAmount || "";
+      document.getElementById("editPaymentStatus").value = trip.paymentStatus || "Paid";
+
+      editModal.show();
+    }
+
+    // Calculate Duration and Total KM whenever relevant fields change
+    function recalcDurationAndKm() {
+      const startTime = document.getElementById("editStartTime").value;
+      const endTime = document.getElementById("editEndTime").value;
+      const startKm = parseFloat(document.getElementById("editStartKm").value);
+      const endKm = parseFloat(document.getElementById("editEndKm").value);
+
+      // Duration calculation in hours (end - start)
+      if (startTime && endTime) {
+        const [sh, sm] = startTime.split(":").map(Number);
+        const [eh, em] = endTime.split(":").map(Number);
+        let diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (diff < 0) diff += 24 * 60; // handle overnight trips
+        const hours = (diff / 60).toFixed(2);
+        document.getElementById("editDuration").value = hours;
+      } else {
+        document.getElementById("editDuration").value = "";
+      }
+
+      // Total KM = endKm - startKm
+      if (!isNaN(startKm) && !isNaN(endKm)) {
+        const totalKm = (endKm - startKm).toFixed(2);
+        document.getElementById("editTotalKm").value = totalKm >= 0 ? totalKm : "";
+      } else {
+        document.getElementById("editTotalKm").value = "";
+      }
+    }
+
+    // Attach event listeners for time and km inputs to auto-calc duration and total km
+    [
+      "editStartTime",
+      "editEndTime",
+      "editStartKm",
+      "editEndKm"
+    ].forEach((id) =>
+      document.getElementById(id).addEventListener("input", recalcDurationAndKm)
+    );
+
+    // Save edits to Firebase
+    editForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      if (!currentEditKey) {
+        alert("No trip selected for editing.");
+        return;
+      }
+
+      const updatedTrip = {
+        bookingId: document.getElementById("editBookingId").value.trim(),
+        date: document.getElementById("editDate").value,
+        duty: document.getElementById("editDuty").value.trim(),
+        reference: document.getElementById("editReference").value.trim(),
+        pickupLocation: document.getElementById("editPickupLocation").value.trim(),
+        dropLocation: document.getElementById("editDropLocation").value.trim(),
+        customerName: document.getElementById("editCustomerName").value.trim(),
+        customerNumber: document.getElementById("editCustomerNumber").value.trim(),
+        driverName: document.getElementById("editDriverName").value.trim(),
+        driverNumber: document.getElementById("editDriverNumber").value.trim(),
+        vehicleModel: document.getElementById("editVehicleModel").value.trim(),
+        vehicleNumber: document.getElementById("editVehicleNumber").value.trim(),
+        startTime: document.getElementById("editStartTime").value,
+        endTime: document.getElementById("editEndTime").value,
+        duration: document.getElementById("editDuration").value,
+        extraHours: document.getElementById("editExtraHours").value,
+        startKm: document.getElementById("editStartKm").value,
+        endKm: document.getElementById("editEndKm").value,
+        totalKm: document.getElementById("editTotalKm").value,
+        extraKm: document.getElementById("editExtraKm").value,
+        parking: document.getElementById("editParking").value,
+        toll: document.getElementById("editToll").value,
+        totalAmount: document.getElementById("editTotalAmount").value,
+        paymentStatus: document.getElementById("editPaymentStatus").value,
+      };
+
+      // Update Firebase
+      firebase
+        .database()
+        .ref("trips/" + currentEditKey)
+        .set(updatedTrip)
+        .then(() => {
+          alert("Trip updated successfully!");
+          editModal.hide();
+          currentEditKey = null;
+        })
+        .catch((error) => {
+          alert("Error updating trip: " + error.message);
+        });
+    });
+
+    // Delete trip by key
+    function deleteTrip(key) {
+      firebase
+        .database()
+        .ref("trips/" + key)
+        .remove()
+        .then(() => {
+          alert("Trip deleted successfully.");
+        })
+        .catch((error) => {
+          alert("Error deleting trip: " + error.message);
+        });
+    }
+
+    // Bulk delete selected trips
+    deleteSelectedBtn.onclick = () => {
+      const selected = [...document.querySelectorAll(".trip-select:checked")];
+      if (selected.length === 0) {
+        alert("Please select trips to delete.");
+        return;
+      }
+      if (confirm(`Are you sure you want to delete ${selected.length} selected trips?`)) {
+        selected.forEach((checkbox) => {
+          const key = checkbox.getAttribute("data-key");
+          deleteTrip(key);
+        });
+      }
+    };
+
+    // Select all toggle
+    selectAllCheckbox.addEventListener("change", () => {
+      const checked = selectAllCheckbox.checked;
+      document.querySelectorAll(".trip-select").forEach((chk) => {
+        chk.checked = checked;
+      });
+    });
+
+    // Filters event listeners
+    [driverFilter, vehicleFilter, startDateInput, endDateInput].forEach((elem) =>
+      elem.addEventListener("change", () => {
+        renderTrips(driverFilter.value, vehicleFilter.value);
+      })
+    );
+
+    // Export to Excel
+    exportExcelBtn.onclick = () => {
+      if (!allTrips.length) {
+        alert("No trips to export.");
+        return;
+      }
+      const wb = XLSX.utils.book_new();
+
+      const wsData = [
+        [
+          "Trip ID", "Date", "Duty", "Reference", "Pickup", "Drop",
+          "Customer Name", "Customer Number", "Driver Name", "Driver Number",
+          "Vehicle Model", "Vehicle Number", "Start Time", "End Time",
+          "Duration", "Extra Hours", "Start KM", "End KM", "Total KM", "Extra KM",
+          "Parking", "Toll", "Total Amount", "Payment Status"
+        ]
+      ];
+
+      allTrips.forEach(trip => {
+        wsData.push([
+          trip.bookingId, trip.date, trip.duty, trip.reference, trip.pickupLocation, trip.dropLocation,
+          trip.customerName, trip.customerNumber, trip.driverName, trip.driverNumber,
+          trip.vehicleModel, trip.vehicleNumber, trip.startTime, trip.endTime,
+          trip.duration, trip.extraHours, trip.startKm, trip.endKm, trip.totalKm, trip.extraKm,
+          trip.parking, trip.toll, trip.totalAmount, trip.paymentStatus
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Adjust column widths for better Excel layout
+      ws['!cols'] = Array(wsData[0].length).fill({ wch: 15 });
+
+      XLSX.utils.book_append_sheet(wb, ws, "Trips");
+      XLSX.writeFile(wb, "NST_Trips.xlsx");
+    };
+
+    // Export to PDF
+    exportPDFBtn.onclick = () => {
+      if (!allTrips.length) {
+        alert("No trips to export.");
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("landscape", "pt", "a4");
+
+      const columns = [
+        "Trip ID", "Date", "Duty", "Reference", "Pickup", "Drop",
+        "Customer Name", "Customer Number", "Driver Name", "Driver Number",
+        "Vehicle Model", "Vehicle Number", "Start Time", "End Time",
+        "Duration", "Extra Hours", "Start KM", "End KM", "Total KM", "Extra KM",
+        "Parking", "Toll", "Total Amount", "Payment Status"
+      ];
+
+      const rows = allTrips.map(trip => [
+        trip.bookingId, trip.date, trip.duty, trip.reference, trip.pickupLocation, trip.dropLocation,
+        trip.customerName, trip.customerNumber, trip.driverName, trip.driverNumber,
+        trip.vehicleModel, trip.vehicleNumber, trip.startTime, trip.endTime,
+        trip.duration, trip.extraHours, trip.startKm, trip.endKm, trip.totalKm, trip.extraKm,
+        trip.parking, trip.toll, trip.totalAmount, trip.paymentStatus
+      ]);
+
+      doc.setFontSize(14);
+      doc.text("NST Trip Summary", 40, 40);
+
+      doc.autoTable({
+        startY: 60,
+        head: [columns],
+        body: rows,
+        styles: { fontSize: 7, cellPadding: 3 },
+        headStyles: { fillColor: [22, 160, 133], textColor: 255, fontStyle: "bold" },
+        theme: "grid",
+        margin: { left: 20, right: 20 },
+        tableWidth: "auto",
+        didDrawPage: function (data) {
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+          doc.setFontSize(8);
+          doc.text(`Page ${pageCurrent} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 50 },
+          4: { cellWidth: 50 },
+          5: { cellWidth: 50 },
+          // adjust more widths if needed
+        }
+      });
+
+      doc.save("NST_Trips.pdf");
+    };
+
+    // WhatsApp share trip details
+    function shareTripWhatsApp(key) {
+      const trip = getTripByKey(key);
+      if (!trip) return alert("Trip data not found.");
+
+      const message = `
+NST TRIP SUMMARY
+
+TRIP DETAILS
+Trip ID: ${trip.bookingId}
+Date: ${trip.date}
+Duty: ${trip.duty}
+Reference: ${trip.reference}
+
+LOCATIONS
+Pickup: ${trip.pickupLocation}
+Drop: ${trip.dropLocation}
+
+CUSTOMER INFO
+Name: ${trip.customerName}
+Number: ${trip.customerNumber}
+
+DRIVER INFO
+Name: ${trip.driverName}
+Number: ${trip.driverNumber}
+
+VEHICLE INFO
+Model: ${trip.vehicleModel}
+Number: ${trip.vehicleNumber}
+
+TIME DETAILS
+Start Time: ${formatTime12h(trip.startTime)}
+End Time: ${formatTime12h(trip.endTime)}
+Duration: ${trip.duration} hrs
+Extra Hours: ${trip.extraHours}
+
+DISTANCE DETAILS
+Start KM: ${trip.startKm}
+End KM: ${trip.endKm}
+Total KM: ${trip.totalKm} km
+Extra KM: ${trip.extraKm}
+
+FARE DETAILS
+Parking: ₹${trip.parking}
+Toll: ₹${trip.toll}
+Total Amount: ₹${trip.totalAmount}
+Payment Status: ${trip.paymentStatus}
+      `.trim();
+
+      const url = "https://wa.me/?text=" + encodeURIComponent(message);
+      window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>
